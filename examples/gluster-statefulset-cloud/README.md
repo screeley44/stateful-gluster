@@ -40,8 +40,8 @@ This example is initial development and research that utilizes the following:
 
 # Experimentation
 1. After initial cluster is running (make sure to give it time for liveness probe initial delay), check the TSP
-`
+```
   # oc rsh glusterfs-0
   # gluster peer status
-`
+```
 
