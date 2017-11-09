@@ -1,0 +1,169 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: gluster
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+  zone: us-east-1d
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glusterfs
+  labels:
+    app: glusterfs
+    glusterfs: service
+spec:
+  ports:
+  - port: 24007
+    name: glusterd
+  - port: 24008
+    name: management
+  clusterIP: None
+  selector:
+    app: glusterfs
+---
+kind: StatefulSet
+apiVersion: apps/v1beta2
+metadata:
+  name: glusterfs
+  labels:
+    glusterfs: statefulset
+  annotations:
+    description: GlusterFS StatefulSet
+    tags: glusterfs
+spec:
+  selector:
+    matchLabels:
+      app: glusterfs
+  serviceName: glusterfs
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      name: glusterfs
+      labels:
+        app: glusterfs
+        glusterfs: pod
+        glusterfs-node: pod
+    spec:
+      hostNetwork: true
+      containers:
+      - image: gluster/gluster-centos:latest
+        imagePullPolicy: IfNotPresent
+        name: glusterfs
+        lifecycle:
+          postStart:
+            exec:
+              command: 
+              - "chmod"
+              - "+x"
+              - "/usr/share/bin/gluster-post.sh"
+        ports:
+        - containerPort: 24007
+        - containerPort: 24008
+        env:
+        - name: GB_GLFS_LRU_COUNT
+          value: "15"
+        - name: TCMU_LOGDIR
+          value: "/var/log/glusterfs/gluster-block"
+        - name: GB_LOGDIR
+          value: "/var/log/glusterfs/gluster-block"
+        - name: BASE_NAME
+          value: "glusterfs"
+        - name: SERVICE_NAME
+          value: "glusterfs"
+        - name: NAMESPACE
+          value: "default"
+        - name: INITIAL_PEER_COUNT
+          value: "0"
+        - name: ORIGINAL_PEER_COUNT
+          value: "3"
+        - name: DNS_DOMAIN
+          value: "svc.cluster.local"
+        - name: VOLUME_BASE
+          value: "glusterfs-data"
+        - name: MOUNT_BASE
+          value: "/mnt/storage/"
+        - name: VOLUME_COUNT
+          value: "1"
+        - name: CREATE_VOLUMES
+          value: "0"
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        volumeMounts:
+        - name: glusterfs-state
+          mountPath: "/glusterfs"
+        - name: glusterfs-cgroup
+          mountPath: "/sys/fs/cgroup"
+          readOnly: true
+        - name: glusterfs-ssl
+          mountPath: "/etc/ssl"
+          readOnly: true
+        - name: gluster-scripts
+          mountPath: "/usr/share/bin"
+        - name: glusterfs-data0
+          mountPath: "/mnt/storage/glusterfs-data0"
+        securityContext:
+          capabilities: {}
+          privileged: true
+        readinessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 10
+          tcpSocket:
+            port: 24007
+          periodSeconds: 15
+          successThreshold: 1
+          failureThreshold: 12
+        livenessProbe:
+          exec:
+            command:
+            - "/bin/sh"
+            - "-c"
+            - "source ./usr/share/bin/gluster-post.sh"
+          initialDelaySeconds: 120
+          periodSeconds: 30
+#        livenessProbe:
+#          timeoutSeconds: 3
+#          initialDelaySeconds: 10
+#          tcpSocket:
+#            port: 24007
+#          periodSeconds: 15
+#          successThreshold: 1
+#          failureThreshold: 12
+      volumes:
+      - name: glusterfs-cgroup
+        hostPath:
+          path: "/sys/fs/cgroup"
+      - name: glusterfs-ssl
+        hostPath:
+          path: "/etc/ssl"
+      - name: gluster-scripts
+        hostPath:
+          path: "/usr/share/gluster-scripts"
+#      - name: gluster-scripts
+#        persistentVolumeClaim:
+#          claimName: gluster-scripts
+  volumeClaimTemplates:
+  - metadata:
+      name: glusterfs-state
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gluster
+      resources:
+        requests:
+          storage: 20Gi
+  - metadata:
+      name: glusterfs-data0
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gluster
+      resources:
+        requests:
+          storage: 80Gi
