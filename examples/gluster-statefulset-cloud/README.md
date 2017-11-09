@@ -13,3 +13,11 @@ This example is initial development and research that utilizes the following:
 - Treat GlusterFS as any other Kubernetes like application that can bounce around between nodes, 
   scale up and down and maintain state
 
+# The Recipe
+1. all-in-one yaml file that includes
+- storageclass definition
+- headless service
+- statefulset definition
+
+2. scripts to be executed for liveness probe and preStop hook in lifecycle management.
+
