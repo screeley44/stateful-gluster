@@ -41,39 +41,162 @@ This example is initial development and research that utilizes the following:
 # Experimentation
 1. After initial cluster is running (make sure to give it time for liveness probe initial delay), check the TSP
 ```
+  # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running   0          4m        172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Running   0          4m        172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running   0          3m        172.18.2.177   ip-172-18-2-177.ec2.internal
+
   # oc rsh glusterfs-0
-  # gluster peer status
+sh-4.2# gluster peer status
+Number of Peers: 2
+
+Hostname: glusterfs-1.glusterfs.default.svc.cluster.local
+Uuid: d77f225f-14f9-4028-9ed1-02eff28cbc4c
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
+Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
+State: Peer in Cluster (Connected)
+
 ```
 
 2.  Scale Up the cluster and again, check status of TSP and make sure pods are running
 ```
-  # oc scale statefulsets glusterfs --replicas=4
+  # oc scale statefulsets glusterfs --replicas=5
+statefulset "glusterfs" scaled
+
   # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running   0          8m        172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Running   0          7m        172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running   0          7m        172.18.2.177   ip-172-18-2-177.ec2.internal
+glusterfs-3                1/1       Running   0          1m        172.18.3.111   ip-172-18-3-111.ec2.internal
+glusterfs-4                1/1       Running   0          33s       172.18.9.66    ip-172-18-9-66.ec2.internal
+
 
   # oc rsh glusterfs-0
-  # gluster peer status
+sh-4.2# gluster peer status
+Number of Peers: 4
+
+Hostname: glusterfs-1.glusterfs.default.svc.cluster.local
+Uuid: d77f225f-14f9-4028-9ed1-02eff28cbc4c
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
+Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-3.glusterfs.default.svc.cluster.local
+Uuid: 54b7cfc0-965e-4e4e-8491-d86df62a66fc
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-4.glusterfs.default.svc.cluster.local
+Uuid: 4076907a-f4c4-4c0a-b709-b36bf6e52644
+State: Peer in Cluster (Connected)
+
 ```
 *Note that the cluster TSP should have scaled up and the TSP will have each member from any of the pods
 
 3.  Scale down, similar to above
 ```
   # oc scale statefulsets glusterfs --replicas=3
-  # oc get pods -o wide
+statefulset "glusterfs" scaled
 
-  # oc rsh glusterfs-0
-  # gluster peer status
+  # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running   0          13m       172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Running   0          12m       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running   0          12m       172.18.2.177   ip-172-18-2-177.ec2.internal
+
+  # oc rsh glusterfs-1
+sh-4.2# gluster peer status
+Number of Peers: 2
+
+Hostname: glusterfs-0.glusterfs.default.svc.cluster.local
+Uuid: edb18957-b7f5-468d-baf8-19e0e02d20c7
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
+Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
+State: Peer in Cluster (Connected)
+
 ```
 
 4.  Delete a pod - do we recover?
 ```
-  # oc delete pod glusterfs-1
+  # oc scale statefulsets glusterfs --replicas=4
+statefulset "glusterfs" scaled
+  
   # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running   0          18m       172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Running   0          17m       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running   0          17m       172.18.2.177   ip-172-18-2-177.ec2.internal
+glusterfs-3                1/1       Running   0          3m        172.18.3.111   ip-172-18-3-111.ec2.internal
+
+  # oc rsh glusterfs-0
+sh-4.2# gluster peer status
+Number of Peers: 3
+
+Hostname: glusterfs-1.glusterfs.default.svc.cluster.local
+Uuid: d77f225f-14f9-4028-9ed1-02eff28cbc4c
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
+Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-3.glusterfs.default.svc.cluster.local
+Uuid: 55fff684-b838-4679-b590-cc5388148c8d
+State: Peer in Cluster (Connected)
+sh-4.2# exit
+
+
+  # oc delete pod glusterfs-1
+pod "glusterfs-1" deleted
+
+  # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running       0          21m       172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Terminating   0          20m       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running       0          20m       172.18.2.177   ip-172-18-2-177.ec2.internal
+glusterfs-3                1/1       Running       0          6m        172.18.3.111   ip-172-18-3-111.ec2.internal
+
+  # oc get pods -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
+glusterfs-0                1/1       Running   0          22m       172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-1                1/1       Running   0          51s       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-2                1/1       Running   0          21m       172.18.2.177   ip-172-18-2-177.ec2.internal
+glusterfs-3                1/1       Running   0          7m        172.18.3.111   ip-172-18-3-111.ec2.internal
+
+  # oc rsh glusterfs-0
+sh-4.2# gluster peer status
+Number of Peers: 3
+
+Hostname: glusterfs-1.glusterfs.default.svc.cluster.local
+Uuid: d77f225f-14f9-4028-9ed1-02eff28cbc4c
+State: Peer Rejected (Connected)
+
+Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
+Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
+State: Peer in Cluster (Connected)
+
+Hostname: glusterfs-3.glusterfs.default.svc.cluster.local
+Uuid: 55fff684-b838-4679-b590-cc5388148c8d
+State: Peer in Cluster (Connected)
+
+
 
   # oc rsh glusterfs-0
   # gluster peer status
 ```
 
-5.  Bring a node down, check state of the cluster, now bring back up
+5.  Bring a node down (in AWS set state to `stopped`), check state of the cluster
+
+
+6.  Bring the cluster down (in AWS set state to `stopped`), wait some time and bring back up
+All Good Here - have done this multiple times
 
 
 
