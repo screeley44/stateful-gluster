@@ -38,3 +38,10 @@ This example is initial development and research that utilizes the following:
 1. Node goes down, since Statefulsets keep consistent DNS naming (but not guaranteed IPs - although, so far it seems they are mostly retained)
    when we bring the node back up OR bring up a new node in it's place, what happens with the TSP?
 
+# Experimentation
+1. After initial cluster is running (make sure to give it time for liveness probe initial delay), check the TSP
+---
+  # oc rsh glusterfs-0
+  # gluster peer status
+---
+
