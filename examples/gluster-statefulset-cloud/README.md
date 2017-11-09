@@ -45,3 +45,36 @@ This example is initial development and research that utilizes the following:
   # gluster peer status
 ```
 
+2.  Scale Up the cluster and again, check status of TSP and make sure pods are running
+```
+  # oc scale statefulsets glusterfs --replicas=4
+  # oc get pods -o wide
+
+  # oc rsh glusterfs-0
+  # gluster peer status
+```
+*Note that the cluster TSP should have scaled up and the TSP will have each member from any of the pods
+
+3.  Scale down, similar to above
+```
+  # oc scale statefulsets glusterfs --replicas=3
+  # oc get pods -o wide
+
+  # oc rsh glusterfs-0
+  # gluster peer status
+```
+
+4.  Delete a pod - do we recover?
+```
+  # oc delete pod glusterfs-1
+  # oc get pods -o wide
+
+  # oc rsh glusterfs-0
+  # gluster peer status
+```
+
+5.  Bring a node down, check state of the cluster, now bring back up
+
+
+
+
