@@ -95,6 +95,8 @@ then
   
 
   # TODO: Add "peer rejected" status and mitigation
+  # TODO: think it comes from above todo state: 
+  #              peer probe: failed: glusterfs-0.glusterfs.default.svc.cluster.local is either already part of another cluster or having volumes configured
   # TODO: test volume management  
 
   if [ "$INITIAL_RUN" == "yes" ]
