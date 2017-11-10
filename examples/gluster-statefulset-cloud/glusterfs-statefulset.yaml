@@ -62,7 +62,13 @@ spec:
               command: 
               - "chmod"
               - "+x"
-              - "/usr/share/bin/gluster-post.sh"
+              - "/usr/share/bin/gluster-post.sh /usr/share/bin/gluster-stop.sh"
+          preStop:
+            exec:
+              command: 
+              - "/bin/sh"
+              - "-c"
+              - "source ./usr/share/bin/gluster-stop.sh"
         ports:
         - containerPort: 24007
         - containerPort: 24008

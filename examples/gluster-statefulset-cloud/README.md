@@ -34,9 +34,19 @@ This example is initial development and research that utilizes the following:
   but wondering about what happens when a pod is killed by a user - not sure the liveness probe can recover from that
 
 
-# Issues
+# Potential and Real Issues
 1. Node goes down, since Statefulsets keep consistent DNS naming (but not guaranteed IPs - although, so far it seems they are mostly retained)
    when we bring the node back up OR bring up a new node in it's place, what happens with the TSP?
+
+2. Best way to handle the `peer rejected` status, which happens when you delete a pod outside of the normal healthy scale up or down.
+- We could maybe use a lifecycle hook for preStop which fires before termination to remove from TSP and let the normal liveness probe add back in
+- Add another condition to our liveness probe to remedy the situation (about 6 steps)
+
+3. I'm using hostNetwork because the pods can't communicate with each other, so this gives me a hostname of the node in the container rather than
+   the pod name as the hostname (i.e. ip-172-18-12-34.ec2.internal vs. glusterfs-2). This makes it hard to tie the pod name back to the host.
+   If I could get that info, it would help with some recovery decisions.
+
+
 
 # Experimentation
 1. After initial cluster is running (make sure to give it time for liveness probe initial delay), check the TSP

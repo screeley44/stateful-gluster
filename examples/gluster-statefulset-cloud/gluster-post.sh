@@ -5,19 +5,61 @@ IFS=$'\n\t'
 if systemctl status glusterd | grep -q '(running) since'
 then
 
-  # Using API let's get the current replica count
-  # curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://kubernetes.default.svc.cluster.local/apis/apps/v1beta1/statefulsets
-  # Using API let's get the current replica count
-  # curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://kubernetes.default.svc.cluster.local/apis/apps/v1beta1/statefulsets
+  # Run some api commands to figure out who we are and our state
   CURL_COMMAND="curl -v"
   K8_CERTS="--cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   GET_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
   K8_TOKEN="-H \"Authorization: Bearer $GET_TOKEN\""
+
+  # StatefulSet Calls
   STATEFULSET_API_CALL="https://kubernetes.default.svc.cluster.local/apis/apps/v1beta1/namespaces/$NAMESPACE/statefulsets/$BASE_NAME"
-  POD_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods/glusterfs-1"
   STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $STATEFULSET_API_CALL"
-  POD_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $POD_API_CALL"
   REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
+  echo "replica count = $REPLICA_COUNT"
+
+  # Get Node running on
+  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods"
+  PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
+  MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]'`
+
+  # Get Node running on
+  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods?labelSelector=app=glusterfs"
+  PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
+  MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+
+  # Get Host the pods are  running
+  HOSTS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods?labelSelector=app=glusterfs"
+  HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
+  MY_HOSTS=`eval $HOSTS_API_COMMAND | grep 'nodeName'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+
+  # Find the pod running on this particular host
+  HOSTCOUNT=0
+  HOSTPOD=""
+  mycount=0
+
+  for host in $(echo $MY_HOSTS | tr ',' '\n')
+  do
+    # call your procedure/other scripts here below
+    mycount=$(( $mycount + 1 ))
+    if [ "$HOSTNAME" == "$host" ]
+    then
+      # get index
+      HOSTCOUNT=$mycount
+    fi
+  done
+
+  echo " --- NEXT ---"
+  mycount=0
+  for pod in $(echo $MY_PODS | tr ',' '\n')
+  do
+    # call your procedure/other scripts here below
+    mycount=$(( $mycount + 1 ))
+    if [ "$HOSTCOUNT" -eq "$mycount" ]
+    then
+      # get the pod
+      HOSTPOD=$pod
+    fi
+  done
 
   #Figure State of Cluster
   # Keeps track of initial peer count only run on original starting cluster
@@ -46,8 +88,15 @@ then
   echo "expected_replica_count = $EXPECTED_REPLICA_COUNT" >> /usr/share/bin/gluster.log
   echo "replica_count = $REPLICA_COUNT" >> /usr/share/bin/gluster.log
   echo "initial run? $INITIAL_RUN" >> /usr/share/bin/gluster.log
+  echo "MY_HOSTS = $MY_HOSTS" >> /usr/share/bin/gluster.log 
+  echo "MY_PODS = $MY_PODS" >> /usr/share/bin/gluster.log 
+  echo "HOSTCOUNT = $HOSTCOUNT" >> /usr/share/bin/gluster.log
+  echo "HOSTPOD = $HOSTPOD" >> /usr/share/bin/gluster.log  
   
-  
+
+  # TODO: Add "peer rejected" status and mitigation
+  # TODO: test volume management  
+
   if [ "$INITIAL_RUN" == "yes" ]
   then
       echo "Initial Run on host" >> /usr/share/bin/gluster.log
