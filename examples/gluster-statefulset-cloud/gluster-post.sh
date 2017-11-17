@@ -71,6 +71,7 @@ then
   PEER_COUNT=$(( $REPLICA_COUNT - 1 ))
   VOLUME_LIST=""
   INITIAL_RUN="yes"
+  DNSHOSTPOD="$HOSTPOD.$SERVICE_NAME.$NAMESPACE.svc.cluster.local"
 
   if [ -e /usr/share/bin/gluster.log ]
   then
@@ -92,7 +93,7 @@ then
   echo "MY_PODS = $MY_PODS" >> /usr/share/bin/gluster.log 
   echo "HOSTCOUNT = $HOSTCOUNT" >> /usr/share/bin/gluster.log
   echo "HOSTPOD = $HOSTPOD" >> /usr/share/bin/gluster.log  
-  
+  echo "DNSHOSTPOD = $DNSHOSTPOD" >> /usr/share/bin/gluster.log   
 
   # TODO: Add "peer rejected" status and mitigation
   # TODO: think it comes from above todo state: 
@@ -167,10 +168,43 @@ then
       fi
       echo "Probe ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
 
+  elif (gluster peer status | grep -q "Peer Rejected")
+  then
+      echo "We have a rejected peer - need to handle" >> /usr/share/bin/gluster.log
+      rejectedhost="$(gluster peer status | grep -B 2 'Peer Rejected' | grep 'Hostname:'|cut -f2 -d ':' | tr -d '[:space:]')"
+      echo "... rejected host = $rejectedhost" >> /usr/share/bin/gluster.log
+      if [ "$DNSHOSTPOD" == "$rejectedhost" ]
+      then
+         echo "... This is target rejected peer! - $HOSTPOD - $DNSHOSTPOD" >> /usr/share/bin/gluster.log
+         echo "... stopping glusterd" >> /usr/share/bin/gluster.log
+         systemctl stop glusterd
+         echo "... stopped glusterd" >> /usr/share/bin/gluster.log
+         echo "... deleting files" >> /usr/share/bin/gluster.log
+         cp /var/lib/glusterd/glusterd.info /tmp
+         rm -rf /var/lib/glusterd/*
+         cp /tmp/glusterd.info /var/lib/glusterd/
+         echo "... files deleted restarting glusterd" >> /usr/share/bin/gluster.log
+         systemctl start glusterd
+
+         # now recheck a few times
+         echo "... recycling glusterd a few times" >> /usr/share/bin/gluster.log
+         if (gluster peer status | grep -q "Peer Rejected")
+         then
+           systemctl restart glusterd
+         fi
+         sleep 5
+         if (gluster peer status | grep -q "Peer Rejected")
+         then
+           systemctl restart glusterd
+         fi
+      else
+          echo "... peer probing and restarting glusterd, not target rejected peer - $HOSTPOD" >> /usr/share/bin/gluster.log
+          systemctl restart glusterd 
+      fi
+
   elif [ "${ORIGINAL_PEER_COUNT}" -eq "0" ] && [ "$INITIAL_RUN" == "no" ]
   then
-      echo "pod has been recycled" >> /usr/share/bin/gluster.log
-      echo "in #1"
+      echo "We have a recycled pod - need to handle" >> /usr/share/bin/gluster.log
       peerstart=-1
       until test $peerstart -eq $PEER_COUNT
       do
@@ -230,6 +264,7 @@ then
           done
           echo "Volume SetUp Ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
       fi
+
       echo "Probe Ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
 
   elif [ "${ORIGINAL_PEER_COUNT}" -eq "${PEER_COUNT}" ] && [ "$INITIAL_RUN" == "no" ]

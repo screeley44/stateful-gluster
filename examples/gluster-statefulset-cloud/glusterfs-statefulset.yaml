@@ -62,7 +62,11 @@ spec:
               command: 
               - "chmod"
               - "+x"
-              - "/usr/share/bin/gluster-post.sh /usr/share/bin/gluster-stop.sh"
+              - "/usr/share/bin/gluster-post.sh"
+              command:
+              - "chmod"
+              - "+x"
+              - "/usr/share/bin/gluster-stop.sh"
           preStop:
             exec:
               command: 
@@ -106,6 +110,8 @@ spec:
         volumeMounts:
         - name: glusterfs-state
           mountPath: "/glusterfs"
+        - name: glusterd-state
+          mountPath: "/var/lib/glusterd"
         - name: glusterfs-cgroup
           mountPath: "/sys/fs/cgroup"
           readOnly: true
@@ -159,6 +165,14 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: glusterfs-state
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gluster
+      resources:
+        requests:
+          storage: 5Gi
+  - metadata:
+      name: glusterd-state
     spec:
       accessModes: [ "ReadWriteOnce" ]
       storageClassName: gluster

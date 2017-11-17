@@ -204,6 +204,25 @@ State: Peer in Cluster (Connected)
 
 5.  Bring a node down (in AWS set state to `stopped`), check state of the cluster
 
+glusterfs-0                1/1       Running   1          15m       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-1                1/1       Running   0          7m        172.18.2.177   ip-172-18-2-177.ec2.internal
+glusterfs-2                1/1       Running   0          13m       172.18.9.66    ip-172-18-9-66.ec2.internal
+
+
+
+glusterfs-0                1/1       Running             1          15m       172.18.6.186   ip-172-18-6-186.ec2.internal
+glusterfs-1                0/1       ContainerCreating   0          3s        172.18.7.126   ip-172-18-7-126.ec2.internal
+glusterfs-2                1/1       Running             0          14m       172.18.9.66    ip-172-18-9-66.ec2.internal
+
+
+Events:
+  FirstSeen	LastSeen	Count	From			SubObjectPath	Type		Reason			Message
+  ---------	--------	-----	----			-------------	--------	------			-------
+  1m		1m		1	default-scheduler			Normal		Scheduled		Successfully assigned glusterfs-1 to ip-172-18-7-126.ec2.internal
+  1m		1m		1	attachdetach				Warning		FailedAttachVolume	(Volume : "kubernetes.io/aws-ebs/aws://us-east-1d/vol-01c5a0ff0193d0bd7") from node "ip-172-18-7-126.ec2.internal" failed to attach - volume is already exclusively attached to another node
+  1m		1m		1	attachdetach				Warning		FailedAttachVolume	(Volume : "kubernetes.io/aws-ebs/aws://us-east-1d/vol-0ad64695cbc556c06") from node "ip-172-18-7-126.ec2.internal" failed to attach - volume is already exclusively attached to another node
+  1m		1m		1	attachdetach				Warning		FailedAttachVolume	(Volume : "kubernetes.io/aws-ebs/aws://us-east-1d/vol-08ac3c866a5ad5ad3") from node "ip-172-18-7-126.ec2.internal" failed to attach - volume is already exclusively attached to another node
+
 
 6.  Bring the cluster down (in AWS set state to `stopped`), wait some time and bring back up
 All Good Here - have done this multiple times
