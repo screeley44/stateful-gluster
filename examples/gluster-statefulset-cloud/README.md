@@ -179,7 +179,12 @@ glusterfs-0                1/1       Running   0          22m       172.18.7.126
 glusterfs-1                1/1       Running   0          51s       172.18.6.186   ip-172-18-6-186.ec2.internal
 glusterfs-2                1/1       Running   0          21m       172.18.2.177   ip-172-18-2-177.ec2.internal
 glusterfs-3                1/1       Running   0          7m        172.18.3.111   ip-172-18-3-111.ec2.internal
+```
 
+*NOTE with the state being stored in a PVC, the peer rejected typically doesn't happen, if state is not stored in PVC but kept
+      in hostPath then it will hit below status.  We should have a way to handle this condition if it does arise, although it shouldn't
+
+```
   # oc rsh glusterfs-0
 sh-4.2# gluster peer status
 Number of Peers: 3
@@ -196,10 +201,6 @@ Hostname: glusterfs-3.glusterfs.default.svc.cluster.local
 Uuid: 55fff684-b838-4679-b590-cc5388148c8d
 State: Peer in Cluster (Connected)
 
-
-
-  # oc rsh glusterfs-0
-  # gluster peer status
 ```
 
 5.  Bring a node down (in AWS set state to `stopped`), check state of the cluster
