@@ -20,7 +20,7 @@ A work in progress repo utilizing K8 Statefulsets with GlusterFS.
 # Phase 1.2 Status - Phase 1 + Create Volumes and Bricks
 - [x] Create Trusted Storage Pool AND Initial Volume with Bricks
 - [x] Verify replication is working on initial GFS cluster
-- [ ] Scale Up, does the volume expand to the new node and GFS pod
+- [x] Scale Up, does the volume expand to the new node and GFS pod
 - [ ] Scale Down, does the volume shrink to the new number of replicas
 - [ ] TSP and Volume/Brick/Replication All Good?
 

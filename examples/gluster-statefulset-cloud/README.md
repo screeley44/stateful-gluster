@@ -28,7 +28,7 @@ This example is initial development and research that utilizes the following:
 # Phase 2 Status - Phase 1 + Create Volumes and Bricks
 - [x] Create Trusted Storage Pool AND Initial Volume with Bricks
 - [x] Verify replication is working on initial GFS cluster
-- [ ] Scale Up, does the volume expand to the new node and GFS pod
+- [x] Scale Up, does the volume expand to the new node and GFS pod
 - [ ] Scale Down, does the volume shrink to the new number of replicas
 - [ ] TSP and Volume/Brick/Replication All Good?
 
@@ -162,40 +162,44 @@ sh-4.2# exit
 4.  Scale Up the cluster and again, check status of TSP and make sure pods are running, also check the volume info and replication
     with the new node.
 ```
-  # oc scale statefulsets glusterfs --replicas=5
+# oc scale statefulset glusterfs --replicas=4
 statefulset "glusterfs" scaled
 
-  # oc get pods -o wide
-NAME                       READY     STATUS    RESTARTS   AGE       IP             NODE
-glusterfs-0                1/1       Running   0          8m        172.18.7.126   ip-172-18-7-126.ec2.internal
-glusterfs-1                1/1       Running   0          7m        172.18.6.186   ip-172-18-6-186.ec2.internal
-glusterfs-2                1/1       Running   0          7m        172.18.2.177   ip-172-18-2-177.ec2.internal
-glusterfs-3                1/1       Running   0          1m        172.18.3.111   ip-172-18-3-111.ec2.internal
-glusterfs-4                1/1       Running   0          33s       172.18.9.66    ip-172-18-9-66.ec2.internal
+# oc get pods -o wide
+NAME                      READY     STATUS    RESTARTS   AGE       IP              NODE
+glusterfs-0               1/1       Running   0          17m       172.18.7.178    ip-172-18-7-178.ec2.internal
+glusterfs-1               1/1       Running   0          16m       172.18.9.67     ip-172-18-9-67.ec2.internal
+glusterfs-2               1/1       Running   0          15m       172.18.11.126   ip-172-18-11-126.ec2.internal
+glusterfs-3               1/1       Running   0          9m        172.18.9.44     ip-172-18-9-44.ec2.internal
 
+# oc rsh glusterfs-0
+sh-4.2# gluster volume info
+ 
+Volume Name: glusterfs-data0
+Type: Replicate
+Volume ID: 1ef999b2-aa66-49c9-80cc-912a37e0c3a4
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 4 = 4
+Transport-type: tcp
+Bricks:
+Brick1: glusterfs-0.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Brick2: glusterfs-1.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Brick3: glusterfs-2.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Brick4: glusterfs-3.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Options Reconfigured:
+transport.address-family: inet
+nfs.disable: on
 
-  # oc rsh glusterfs-0
-sh-4.2# gluster peer status
-Number of Peers: 4
+Login to newest container and see if the file created on glusterfs-0 is replicated
+# oc rsh glusterfs-3
+sh-4.2# cd /mnt/glusterfs-storage/glusterfs-data0/
+sh-4.2# ls
+myfile.txt
 
-Hostname: glusterfs-1.glusterfs.default.svc.cluster.local
-Uuid: d77f225f-14f9-4028-9ed1-02eff28cbc4c
-State: Peer in Cluster (Connected)
-
-Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
-Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
-State: Peer in Cluster (Connected)
-
-Hostname: glusterfs-3.glusterfs.default.svc.cluster.local
-Uuid: 54b7cfc0-965e-4e4e-8491-d86df62a66fc
-State: Peer in Cluster (Connected)
-
-Hostname: glusterfs-4.glusterfs.default.svc.cluster.local
-Uuid: 4076907a-f4c4-4c0a-b709-b36bf6e52644
-State: Peer in Cluster (Connected)
 
 ```
-*Note that the cluster TSP should have scaled up and the TSP will have each member from any of the pods
+*Note that the cluster TSP and replica count and volume bricks should have scaled up and the TSP will have each member from any of the pods
 
 5.  Scale down, similar to above
 ```
