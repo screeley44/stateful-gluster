@@ -32,6 +32,17 @@ This example is initial development and research that utilizes the following:
 - [ ] Scale Down, does the volume shrink to the new number of replicas
 - [ ] TSP and Volume/Brick/Replication All Good?
 
+# Phase 3 Status - Using the Solution
+- [ ] Can I create pods that use the solution?
+- [ ] Can I dynamically provision clusters or volumes?
+- [ ] General Investigation
+
+# Phase 4 Status - Experimenting with different approaches
+- [ ] Investigate Kube Operators?
+- [ ] Investigate CRD?
+- [ ] Investigate 3rdParty Resources
+- [ ] Investigate specialized plugins/provisioners (external or internal)
+- [ ] Investigate replacing shell script functionality with other technology
 
 # The Recipe
 1. all-in-one yaml file that includes
