@@ -97,10 +97,14 @@ spec:
           value: "glusterfs-data"
         - name: MOUNT_BASE
           value: "/mnt/storage/"
+        - name: FUSE_BASE
+          value: "/mnt/glusterfs-storage/"
         - name: VOLUME_COUNT
           value: "1"
         - name: CREATE_VOLUMES
           value: "0"
+        - name: SET_IDENTIFIER
+          value: "app=glusterfs"
         resources:
           requests:
             memory: 100Mi
@@ -137,8 +141,8 @@ spec:
             - "/bin/sh"
             - "-c"
             - "source ./usr/share/bin/gluster-post.sh"
-          initialDelaySeconds: 120
-          periodSeconds: 30
+          initialDelaySeconds: 180
+          periodSeconds: 60
 #        livenessProbe:
 #          timeoutSeconds: 3
 #          initialDelaySeconds: 10

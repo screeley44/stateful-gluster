@@ -17,23 +17,24 @@ then
   REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
 
   # Get Node running on
-  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods"
+  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods"
   PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
   MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]'`
 
   # Get Node running on
-  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods?labelSelector=app=glusterfs"
+  PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
   PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
   MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
 
   # Get Host the pods are  running
-  HOSTS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/default/pods?labelSelector=app=glusterfs"
+  HOSTS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
   HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
   MY_HOSTS=`eval $HOSTS_API_COMMAND | grep 'nodeName'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
 
   # Find the pod running on this particular host
   HOSTCOUNT=0
   HOSTPOD=""
+  THIS_HOST=""
   mycount=0
 
   for host in $(echo $MY_HOSTS | tr ',' '\n')
@@ -44,10 +45,10 @@ then
     then
       # get index
       HOSTCOUNT=$mycount
+      THIS_HOST=$host
     fi
   done
 
-  echo " --- NEXT ---"
   mycount=0
   for pod in $(echo $MY_PODS | tr ',' '\n')
   do
@@ -69,6 +70,8 @@ then
   EXPECTED_PEER_COUNT=$(( $REPLICA_COUNT - 1 ))
   PEER_COUNT=$(( $REPLICA_COUNT - 1 ))
   VOLUME_LIST=""
+  MOUNT_LIST=""
+  MOUNT_CMD=""
   INITIAL_RUN="yes"
   DNSHOSTPOD="$HOSTPOD.$SERVICE_NAME.$NAMESPACE.svc.cluster.local"
 
@@ -91,7 +94,8 @@ then
   echo "MY_HOSTS = $MY_HOSTS" >> /usr/share/bin/gluster.log 
   echo "MY_PODS = $MY_PODS" >> /usr/share/bin/gluster.log 
   echo "HOSTCOUNT = $HOSTCOUNT" >> /usr/share/bin/gluster.log
-  echo "HOSTPOD = $HOSTPOD" >> /usr/share/bin/gluster.log  
+  echo "HOSTPOD = $HOSTPOD" >> /usr/share/bin/gluster.log
+  echo "THIS_HOST = $THIS_HOST" >> /usr/share/bin/gluster.log
   echo "DNSHOSTPOD = $DNSHOSTPOD" >> /usr/share/bin/gluster.log   
 
   # TODO: Add "peer rejected" status and mitigation
@@ -121,7 +125,9 @@ then
 
       if [ "$CREATE_VOLUMES" -eq "1" ]
       then
-          # TODO: create the volumes (are these replicated automatically if we just create one?
+          # Analyze and Create or Prepare to Create Volumes and Bricks if Needed!
+          echo "" >> /usr/share/bin/gluster.log          
+          echo " ... ... Analyzing Environment for Volumes and Bricks" >> /usr/share/bin/gluster.log 
           volstart=-1
           volend=$(( $VOLUME_COUNT - 1 ))
           listcount=0
@@ -136,29 +142,31 @@ then
               then
                 echo "... ... Looking for Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                 echo "" >> /usr/share/bin/gluster.log
-                echo "From Command:" >> /usr/share/bin/gluster.log
-                result=`eval gluster volume status all` 
-                echo "$result" >> /usr/share/bin/gluster.log
-                if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+
+                # if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+                if (gluster volume info | grep -q ": $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart")
                 then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+
                 else
-                  echo "adding brick, volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart || true`
+                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  wait
                 fi
               else
-                echo "volume does not exist" >> /usr/share/bin/gluster.log
-                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart"
+                echo "Volume does not exist" >> /usr/share/bin/gluster.log
+                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart"
                 echo " ... ... $VOLUME_LIST" >> /usr/share/bin/gluster.log
               fi
             done
 
+            # Create our initial volumes and bricks, if they don't already exist
             echo "volumelist = $VOLUME_LIST" >> /usr/share/bin/gluster.log
             if [ "$VOLUME_LIST" == "" ]
             then
-              echo "Nothing to do for volumes" >> /usr/share/bin/gluster.log
+              echo "Nothing to do for volumes and bricks" >> /usr/share/bin/gluster.log
             else
-              echo "Run our create volume command" >> /usr/share/bin/gluster.log
+              echo "No Volumes Exists - Let's Run our create volume command" >> /usr/share/bin/gluster.log
               result=`eval gluster volume create $VOLUME_BASE$volstart replica $REPLICA_COUNT $VOLUME_LIST force`
               wait
               result=`eval gluster volume start $VOLUME_BASE$volstart`
@@ -166,6 +174,32 @@ then
               echo " volume $VOLUME_BASE$volstart created and started" >> /usr/share/bin/gluster.log
             fi
 
+            # need to check volume mount
+            echo "" >> /usr/share/bin/gluster.log
+            echo " ... Checking For Volume Mount Status for brick$volstart" >> /usr/share/bin/gluster.log
+            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            then
+              echo " ... ... Check to see if fuse mount exists?" >> /usr/share/bin/gluster.log
+              # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
+              if (mount | grep -q "$FUSE_BASE$VOLUME_BASE$volstart")
+              then
+                echo " ... ... ... It does exist, so no action needed to mount brick$volstart" >> /usr/share/bin/gluster.log                     
+              else
+                if [ ! -d "$FUSE_BASE$VOLUME_BASE$volstart" ] 
+                then
+                  echo " ... ... ... Creating mount directory" >> /usr/share/bin/gluster.log
+                  result=`eval mkdir -p $FUSE_BASE$VOLUME_BASE$volstart` 
+                fi
+                MOUNT_CMD="mount -t glusterfs  $DNSHOSTPOD:$VOLUME_BASE$volstart $FUSE_BASE$VOLUME_BASE$volstart"
+                echo " ... ... ... It does not exist, so create mount CMD = $MOUNT_CMD" >> /usr/share/bin/gluster.log
+                echo " ... ... ... Running Mount Command" >> /usr/share/bin/gluster.log 
+                result=`eval $MOUNT_CMD`
+                wait
+                MOUNT_CMD=""
+                echo " ... ... ... Mount Completed Successfully!!" >> /usr/share/bin/gluster.log
+              fi
+            fi
+            echo "" >> /usr/share/bin/gluster.log
           done
       else
           echo "Volume SetUp turned off - to turn on change statefulset value to 1" >> /usr/share/bin/gluster.log
@@ -225,7 +259,9 @@ then
 
       if [ "$CREATE_VOLUMES" -eq "1" ]
       then
-          # TODO: create the volumes (are these replicated automatically if we just create one?
+          # Analyze and Create or Prepare to Create Volumes and Bricks if Needed!
+          echo "" >> /usr/share/bin/gluster.log          
+          echo " ... ... Analyzing Environment for Volumes and Bricks" >> /usr/share/bin/gluster.log 
           volstart=-1
           volend=$(( $VOLUME_COUNT - 1 ))
           listcount=0
@@ -240,29 +276,31 @@ then
               then
                 echo "... ... Looking for Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                 echo "" >> /usr/share/bin/gluster.log
-                echo "From Command:" >> /usr/share/bin/gluster.log
-                result=`eval gluster volume status all` 
-                echo "$result" >> /usr/share/bin/gluster.log
-                if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+
+                # if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+                if (gluster volume info | grep -q ": $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart")
                 then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+
                 else
-                  echo "adding brick, volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart || true`
+                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  wait
                 fi
               else
-                echo "volume does not exist" >> /usr/share/bin/gluster.log
-                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart"
+                echo "Volume does not exist" >> /usr/share/bin/gluster.log
+                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart"
                 echo " ... ... $VOLUME_LIST" >> /usr/share/bin/gluster.log
               fi
             done
 
+            # Create our initial volumes and bricks, if they don't already exist
             echo "volumelist = $VOLUME_LIST" >> /usr/share/bin/gluster.log
             if [ "$VOLUME_LIST" == "" ]
             then
-              echo "Nothing to do for volumes" >> /usr/share/bin/gluster.log
+              echo "Nothing to do for volumes and bricks" >> /usr/share/bin/gluster.log
             else
-              echo "Run our create volume command" >> /usr/share/bin/gluster.log
+              echo "No Volumes Exists - Let's Run our create volume command" >> /usr/share/bin/gluster.log
               result=`eval gluster volume create $VOLUME_BASE$volstart replica $REPLICA_COUNT $VOLUME_LIST force`
               wait
               result=`eval gluster volume start $VOLUME_BASE$volstart`
@@ -270,8 +308,35 @@ then
               echo " volume $VOLUME_BASE$volstart created and started" >> /usr/share/bin/gluster.log
             fi
 
+            # need to check volume mount
+            echo "" >> /usr/share/bin/gluster.log
+            echo " ... Checking For Volume Mount Status for brick$volstart" >> /usr/share/bin/gluster.log
+            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            then
+              echo " ... ... Check to see if fuse mount exists?" >> /usr/share/bin/gluster.log
+              # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
+              if (mount | grep -q "$FUSE_BASE$VOLUME_BASE$volstart")
+              then
+                echo " ... ... ... It does exist, so no action needed to mount brick$volstart" >> /usr/share/bin/gluster.log                     
+              else
+                if [ ! -d "$FUSE_BASE$VOLUME_BASE$volstart" ] 
+                then
+                  echo " ... ... ... Creating mount directory" >> /usr/share/bin/gluster.log
+                  result=`eval mkdir -p $FUSE_BASE$VOLUME_BASE$volstart` 
+                fi
+                MOUNT_CMD="mount -t glusterfs  $DNSHOSTPOD:$VOLUME_BASE$volstart $FUSE_BASE$VOLUME_BASE$volstart"
+                echo " ... ... ... It does not exist, so create mount CMD = $MOUNT_CMD" >> /usr/share/bin/gluster.log
+                echo " ... ... ... Running Mount Command" >> /usr/share/bin/gluster.log 
+                result=`eval $MOUNT_CMD`
+                wait
+                MOUNT_CMD=""
+                echo " ... ... ... Mount Completed Successfully!!" >> /usr/share/bin/gluster.log
+              fi
+            fi
+            echo "" >> /usr/share/bin/gluster.log
           done
-          echo "Volume SetUp Ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
+      else
+          echo "Volume SetUp turned off - to turn on change statefulset value to 1" >> /usr/share/bin/gluster.log
       fi
 
       echo "Probe Ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
@@ -283,7 +348,9 @@ then
 
       if [ "$CREATE_VOLUMES" -eq "1" ]
       then
-          # TODO: create the volumes (are these replicated automatically if we just create one?
+          # Analyze and Create or Prepare to Create Volumes and Bricks if Needed!
+          echo "" >> /usr/share/bin/gluster.log          
+          echo " ... ... Analyzing Environment for Volumes and Bricks" >> /usr/share/bin/gluster.log 
           volstart=-1
           volend=$(( $VOLUME_COUNT - 1 ))
           listcount=0
@@ -298,29 +365,31 @@ then
               then
                 echo "... ... Looking for Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                 echo "" >> /usr/share/bin/gluster.log
-                echo "From Command:" >> /usr/share/bin/gluster.log
-                result=`eval gluster volume status all` 
-                echo "$result" >> /usr/share/bin/gluster.log
-                if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+
+                # if (gluster volume status all | grep -q "Brick: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE")
+                if (gluster volume info | grep -q ": $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart")
                 then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+
                 else
-                  echo "adding brick, volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart || true`
+                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  wait
                 fi
               else
-                echo "volume does not exist" >> /usr/share/bin/gluster.log
-                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart"
+                echo "Volume does not exist" >> /usr/share/bin/gluster.log
+                VOLUME_LIST="$VOLUME_LIST $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart"
                 echo " ... ... $VOLUME_LIST" >> /usr/share/bin/gluster.log
               fi
             done
 
+            # Create our initial volumes and bricks, if they don't already exist
             echo "volumelist = $VOLUME_LIST" >> /usr/share/bin/gluster.log
             if [ "$VOLUME_LIST" == "" ]
             then
-              echo "Nothing to do for volumes" >> /usr/share/bin/gluster.log
+              echo "Nothing to do for volumes and bricks" >> /usr/share/bin/gluster.log
             else
-              echo "Run our create volume command" >> /usr/share/bin/gluster.log
+              echo "No Volumes Exists - Let's Run our create volume command" >> /usr/share/bin/gluster.log
               result=`eval gluster volume create $VOLUME_BASE$volstart replica $REPLICA_COUNT $VOLUME_LIST force`
               wait
               result=`eval gluster volume start $VOLUME_BASE$volstart`
@@ -328,8 +397,35 @@ then
               echo " volume $VOLUME_BASE$volstart created and started" >> /usr/share/bin/gluster.log
             fi
 
+            # need to check volume mount
+            echo "" >> /usr/share/bin/gluster.log
+            echo " ... Checking For Volume Mount Status for brick$volstart" >> /usr/share/bin/gluster.log
+            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            then
+              echo " ... ... Check to see if fuse mount exists?" >> /usr/share/bin/gluster.log
+              # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
+              if (mount | grep -q "$FUSE_BASE$VOLUME_BASE$volstart")
+              then
+                echo " ... ... ... It does exist, so no action needed to mount brick$volstart" >> /usr/share/bin/gluster.log                     
+              else
+                if [ ! -d "$FUSE_BASE$VOLUME_BASE$volstart" ] 
+                then
+                  echo " ... ... ... Creating mount directory" >> /usr/share/bin/gluster.log
+                  result=`eval mkdir -p $FUSE_BASE$VOLUME_BASE$volstart` 
+                fi
+                MOUNT_CMD="mount -t glusterfs  $DNSHOSTPOD:$VOLUME_BASE$volstart $FUSE_BASE$VOLUME_BASE$volstart"
+                echo " ... ... ... It does not exist, so create mount CMD = $MOUNT_CMD" >> /usr/share/bin/gluster.log
+                echo " ... ... ... Running Mount Command" >> /usr/share/bin/gluster.log 
+                result=`eval $MOUNT_CMD`
+                wait
+                MOUNT_CMD=""
+                echo " ... ... ... Mount Completed Successfully!!" >> /usr/share/bin/gluster.log
+              fi
+            fi
+            echo "" >> /usr/share/bin/gluster.log
           done
-          echo "Volume SetUp Ran - updated peers with pool now at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
+      else
+          echo "Volume SetUp turned off - to turn on change statefulset value to 1" >> /usr/share/bin/gluster.log
       fi
       echo "Probe Ran - did not update peers, replica count at $REPLICA_COUNT" >> /usr/share/bin/gluster.log
 
@@ -368,7 +464,7 @@ then
                  volstart=$(( $volstart + 1 ))
                   echo "add-brick command: $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                  # gluster volume create glusterfs-data0 glusterfs-0.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0 glusterfs-1.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0 force 
-                 result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart`
+                 result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
                  wait
                done
            fi
@@ -399,7 +495,7 @@ then
            do
              volstart=$(( $volstart + 1 ))
              echo "remove-brick command: $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
-             result=`eval y | gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart`
+             result=`eval y | gluster volume remove-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart`
              wait
            done
         fi
@@ -430,4 +526,63 @@ else
   echo "Liveness Probe Failed" >> /usr/share/bin/gluster.log
   exit 1
 fi
+
+# checkVolumeAndBricks analyzes state of current glusterfs volumes
+# and the corresponding bricks
+# expects $VOLUME_LIST and $volstart params
+function checkVolumesAndBricks () {
+    # Create our initial volumes and bricks, if they don't already exist
+    echo "volumelist = $VOLUME_LIST" >> /usr/share/bin/gluster.log
+    if [ "$VOLUME_LIST" == "" ]
+    then
+       echo "Nothing to do for volumes and bricks" >> /usr/share/bin/gluster.log
+    else
+       echo "No Volumes Exists - Let's Run our create volume command" >> /usr/share/bin/gluster.log
+       result=`eval gluster volume create $VOLUME_BASE$volstart replica $REPLICA_COUNT $VOLUME_LIST force`
+       wait
+       result=`eval gluster volume start $VOLUME_BASE$volstart`
+       wait
+       echo " volume $VOLUME_BASE$volstart created and started" >> /usr/share/bin/gluster.log
+    fi
+}
+
+# This function checks volume mounts for our fuse mount
+# it expects an argument of volume number
+function checkVolumeMounts () {
+   volnum=0
+   if [ $# -eq 0 ]
+   then
+     volnum=0
+   else
+     volnum=$1
+   fi
+
+   # need to check volume mount
+   echo " ... Checking For Volume Mount Status for brick$volstart" >> /usr/share/bin/gluster.log
+   if [ "$HOSTNAME" == "$THIS_HOST" ]
+   then
+     echo " ... ... Check to see if fuse mount exists?" >> /usr/share/bin/gluster.log
+     # if grep -qs '$FUSE_BASE$VOLUME_BASE$volnum' /proc/mounts
+     if (mount | grep -q "$FUSE_BASE$VOLUME_BASE$volnum")
+     then
+        echo " ... ... ... It does exist, so no action needed to mount brick$volnum" >> /usr/share/bin/gluster.log                     
+     else
+        # make sure our mount dir exists
+        if [ ! -d "$FUSE_BASE$VOLUME_BASE$volnum" ] 
+        then
+          echo " ... ... ... Creating mount directory" >> /usr/share/bin/gluster.log
+          result=`eval mkdir -p $FUSE_BASE$VOLUME_BASE$volnum` 
+        fi
+
+        MOUNT_CMD="mount -t glusterfs  $DNSHOSTPOD:$VOLUME_BASE$volstart $FUSE_BASE$VOLUME_BASE$volnum"
+        echo " ... ... ... It does not exist, so create mount CMD = $MOUNT_CMD" >> /usr/share/bin/gluster.log
+        echo " ... ... ... Running Mount Command" >> /usr/share/bin/gluster.log
+        result=`eval $MOUNT_CMD`
+        wait
+        MOUNT_CMD=""
+        echo " ... ... ... Mount Completed Successfully!!" >> /usr/share/bin/gluster.log
+     fi
+   fi
+}
+
 
