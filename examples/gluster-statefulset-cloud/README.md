@@ -17,6 +17,22 @@ This example is initial development and research that utilizes the following:
 # Non-Goals
 - Do not create anything complicated in terms of CRD, Kuberentes Operators or other external/internal code added to kubernetes, just simple proof of concept using simple bash
 
+# Phase 1 Status - Initializing and Managing TSP
+- [x] Create running and healthy GlusterFS StatefulSet
+- [x] Create initial Trusted Storage Pool
+- [x] Happy Path - Scale Up and Down with Trusted Storage Pool intact
+- [x] Recovery - delete a pod, should recover
+- [x] Recovery - stop a node, pod should go to next available node with TSP intact
+- [x] Recovery - stop the cluster
+
+# Phase 2 Status - Phase 1 + Create Volumes and Bricks
+- [x] Create Trusted Storage Pool AND Initial Volume with Bricks
+- [x] Verify replication is working on initial GFS cluster
+- [ ] Scale Up, does the volume expand to the new node and GFS pod
+- [ ] Scale Down, does the volume shrink to the new number of replicas
+- [ ] TSP and Volume/Brick/Replication All Good?
+
+
 # The Recipe
 1. all-in-one yaml file that includes
 - storageclass definition
@@ -63,8 +79,10 @@ This example is initial development and research that utilizes the following:
 
 6. Can we have multiple GFS clusters running as their own StatefulSets in a single OCP/Kube cluster?
 
+7. When resizing/scaling do we delete bricks and volumes?  How best to do that?
 
-# Initial Experimentation
+
+# Initial Experimentation Results
 1. After initial cluster is running (make sure to give it time for liveness probe initial delay), check the TSP
 ```
   # oc get pods -o wide

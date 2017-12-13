@@ -149,9 +149,12 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
+                  echo "Brick Added" >> /usr/share/bin/gluster.log
+                  # result=`gluster volume rebalance $VOLUME_BASE$volstart start`
+                  # echo "Initiated Volume Rebalance" >> /usr/share/bin/gluster.log
                 fi
               else
                 echo "Volume does not exist" >> /usr/share/bin/gluster.log
@@ -283,9 +286,12 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
+                  echo "Brick Added" >> /usr/share/bin/gluster.log
+                  # result=`gluster volume rebalance $VOLUME_BASE$volstart start`
+                  # echo "Initiated Volume Rebalance" >> /usr/share/bin/gluster.log
                 fi
               else
                 echo "Volume does not exist" >> /usr/share/bin/gluster.log
@@ -372,9 +378,12 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick, Volume already exists" >> /usr/share/bin/gluster.log
-                  result=`eval gluster volume add-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart force || true`
+                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
+                  echo "Brick Added" >> /usr/share/bin/gluster.log
+                  # result=`gluster volume rebalance $VOLUME_BASE$volstart start`
+                  # echo "Initiated Volume Rebalance" >> /usr/share/bin/gluster.log
                 fi
               else
                 echo "Volume does not exist" >> /usr/share/bin/gluster.log
@@ -495,7 +504,7 @@ then
            do
              volstart=$(( $volstart + 1 ))
              echo "remove-brick command: $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
-             result=`eval y | gluster volume remove-brick brick$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart`
+             result=`eval y | gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart`
              wait
            done
         fi
