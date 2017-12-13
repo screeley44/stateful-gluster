@@ -149,7 +149,7 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  echo "Adding brick to Existing Volume $VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                   result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
                   echo "Brick Added" >> /usr/share/bin/gluster.log
@@ -286,7 +286,7 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  echo "Adding brick to Existing Volume $VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                   result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
                   echo "Brick Added" >> /usr/share/bin/gluster.log
@@ -378,7 +378,7 @@ then
                   echo "brick and volume already exist for $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
 
                 else
-                  echo "Adding brick to Existing Volume $OLUME_BASE$volstart" >> /usr/share/bin/gluster.log
+                  echo "Adding brick to Existing Volume $VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
                   result=`eval gluster volume add-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force || true`
                   wait
                   echo "Brick Added" >> /usr/share/bin/gluster.log

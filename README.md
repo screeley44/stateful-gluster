@@ -36,7 +36,14 @@ A work in progress repo utilizing K8 Statefulsets with GlusterFS.
 - [ ] Investigate specialized plugins/provisioners (external or internal)
 - [ ] Investigate replacing shell script functionality with other technology
 
-See readme and examples for more detail and PoC
+
+# Current Issues or ToDo's:
+- script can be hardened, admittedley not the best bash shell script person :-)
+- 
+
+
+
+# See readme and examples for more detail and PoC
 
 
 
