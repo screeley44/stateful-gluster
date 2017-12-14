@@ -96,7 +96,8 @@ then
   echo "HOSTCOUNT = $HOSTCOUNT" >> /usr/share/bin/gluster.log
   echo "HOSTPOD = $HOSTPOD" >> /usr/share/bin/gluster.log
   echo "THIS_HOST = $THIS_HOST" >> /usr/share/bin/gluster.log
-  echo "DNSHOSTPOD = $DNSHOSTPOD" >> /usr/share/bin/gluster.log   
+  echo "DNSHOSTPOD = $DNSHOSTPOD" >> /usr/share/bin/gluster.log
+  echo "VOLUME_COUNT = $VOLUME_COUNT" >> /usr/share/bin/gluster.log 
 
   # TODO: Add "peer rejected" status and mitigation
   # TODO: think it comes from above todo state: 
@@ -503,9 +504,16 @@ then
            until test $volstart -eq $VOLUME_COUNT
            do
              volstart=$(( $volstart + 1 ))
-             echo "remove-brick command: gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force" >> /usr/share/bin/gluster.log
-             result=`eval yes | gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force`
-             wait
+             if (gluster peer status | grep -q "Hostname: $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local")
+             then
+               # I want to double check and make sure the brick actually exists
+               if (gluster volume info | grep -q ": $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart")
+               then               
+                 echo "remove-brick command: gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force" >> /usr/share/bin/gluster.log
+                 result=`eval yes | gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force`
+                 wait
+               fi
+             fi
            done
         fi
 

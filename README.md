@@ -1,6 +1,7 @@
 # stateful-gluster
 A work in progress repo utilizing K8 Statefulsets with GlusterFS.
 
+---
 # Project 1: gluster-statefulset-cloud-aws
 
 ## Goal
@@ -30,26 +31,26 @@ A work in progress repo utilizing K8 Statefulsets with GlusterFS.
 ## Phase 1.3 Status - Using the Solution
 - [ ] Can I create pods that use the solution?
 - [ ] Can I dynamically provision clusters or volumes?
-- [ ] General Investigation
 - [ ] Create all-in-one docker image incorporating the gluster-post.sh
 - [ ] Document tutorials
 
-## Phase 1.4 Status - Experimenting with different approaches
+## Additional Information:
+- See [main project page](https://github.com/screeley44/stateful-gluster/tree/master/projects/gluster-statefulset-cloud-aws) for more detail and discussion
+- See [scripts-and-yaml/scrath-pad-results](https://github.com/screeley44/stateful-gluster/tree/master/projects/gluster-statefulset-cloud-aws/scripts-and-yaml/scratch-pad-results) for inital testing and validation of this project
+
+---
+# Project 2: TBD
+
+
+
+---
+# Project 3: Different Approaches
+
+## Phase 3.1 Status - Experimenting with different approaches
 - [ ] Investigate Kube Operators?
 - [ ] Investigate CRD?
 - [ ] Investigate 3rdParty Resources
 - [ ] Investigate specialized plugins/provisioners (external or internal)
 - [ ] Investigate replacing shell script functionality with other technology
-
-
-# Current Issues or ToDo's:
-- script can be hardened, admittedley not the best bash shell script person :-)
-- 
-
-
-
-# See readme and examples for more detail and PoC
-
-
 
  
