@@ -504,7 +504,7 @@ then
            do
              volstart=$(( $volstart + 1 ))
              echo "remove-brick command: $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart" >> /usr/share/bin/gluster.log
-             result=`eval y | gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart`
+             result=`eval gluster volume remove-brick $VOLUME_BASE$volstart replica $REPLICA_COUNT $BASE_NAME-$peerstart.$SERVICE_NAME.$NAMESPACE.svc.cluster.local:$MOUNT_BASE$VOLUME_BASE$volstart/brick$volstart force`
              wait
            done
         fi
