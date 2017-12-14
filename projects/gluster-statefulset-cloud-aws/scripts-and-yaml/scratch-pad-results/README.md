@@ -138,7 +138,37 @@ Hostname: glusterfs-2.glusterfs.default.svc.cluster.local
 Uuid: 19c08924-19f1-4160-a67b-048ed3de4b4a
 State: Peer in Cluster (Connected)
 
+ # oc scale statefulset glusterfs --replicas=3
+statefulset "glusterfs" scaled
+
+ # oc get pods -o wide
+NAME                      READY     STATUS    RESTARTS   AGE       IP              NODE
+glusterfs-0               1/1       Running   0          30m       172.18.9.67     ip-172-18-9-67.ec2.internal
+glusterfs-1               1/1       Running   0          29m       172.18.7.178    ip-172-18-7-178.ec2.internal
+glusterfs-2               1/1       Running   0          28m       172.18.9.44     ip-172-18-9-44.ec2.internal
+
+ # oc rsh glusterfs-2
+sh-4.2# gluster volume info
+ 
+Volume Name: glusterfs-data0
+Type: Replicate
+Volume ID: b1ebd63b-f02c-4cb1-ac5d-0bcabe9efa28
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: glusterfs-0.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Brick2: glusterfs-1.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Brick3: glusterfs-2.glusterfs.default.svc.cluster.local:/mnt/storage/glusterfs-data0/brick0
+Options Reconfigured:
+transport.address-family: inet
+nfs.disable: on
+
 ```
+*Note that the cluster TSP and replica count and volume bricks should have scaled down
+*Alost notice that Brick4 was removed and replicas are 1 X 3 now!
+
 
 6.  Delete a pod - do we recover?
 ```

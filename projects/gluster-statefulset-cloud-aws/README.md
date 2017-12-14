@@ -29,8 +29,8 @@ This example is initial development and research that utilizes the following:
 - [x] Create Trusted Storage Pool AND Initial Volume with Bricks
 - [x] Verify replication is working on initial GFS cluster
 - [x] Scale Up, does the volume expand to the new node and GFS pod
-- [ ] Scale Down, does the volume shrink to the new number of replicas
-- [ ] TSP and Volume/Brick/Replication All Good?
+- [x] Scale Down, does the volume shrink to the new number of replicas
+- [x] TSP and Volume/Brick/Replication All Good?
 - [ ] Multiple Gluster StatefulSets on single cluster
 
 ## Phase 1.3 Status - Using the Solution
