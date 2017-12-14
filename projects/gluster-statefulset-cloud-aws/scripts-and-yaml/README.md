@@ -10,3 +10,19 @@
 
 ## About gluster-post.sh
 
+
+## About the Image
+
+
+## How to Run and Test this
+
+
+### Running by placing gluster-post.sh on each node
+
+
+### Running by using all-in-one image (no need to deploy gluster-post.sh)
+
+
+
+
+
