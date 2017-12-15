@@ -1,4 +1,4 @@
-# Kicking the Tires with GlusterFS StatefulSet prototype version
+# Kicking the Tires with GlusterFS StatefulSet prototype version on AWS
 
 ## Introduction
 
@@ -6,7 +6,7 @@ This tutorial will walk through the steps needed to try out this StatefulSet. Th
 OpenShift 3.6 but can be easily modified to run directly on Kubernetes as well.
 
 ---
-### Running This Example on Existing OpenShift Cluster
+### Running This Example on Existing OpenShift Cluster on AWS
 
 #### Prereqs
 
@@ -36,6 +36,48 @@ OpenShift 3.6 but can be easily modified to run directly on Kubernetes as well.
 ```
   # oadm policy add-cluster-role-to-user cluster-reader system:serviceaccount:default:default
 ```
+
+3.  Make sure the default router is running, if you installed with openshift-ansible, it most likely is, if it's not, then run the following command:
+
+```
+  oadm router default-router --replicas=3
+```
+
+```
+ # oc get pods -o wide | grep router
+NAME                      READY     STATUS    RESTARTS   AGE       IP              NODE
+router-1-6d2br            1/1       Running   5          15d       172.18.11.126   ip-172-18-11-126.ec2.internal
+router-1-6g2vj            1/1       Running   5          15d       172.18.9.44     ip-172-18-9-44.ec2.internal
+router-1-shkhn            1/1       Running   5          15d       172.18.7.178    ip-172-18-7-178.ec2.internal
+```
+
+After it is up and running add the following into the dnsmasq, where *cloudapps.example.com* is your subdomain
+
+```
+  address=/.cloudapps.example.com/<one of your router ip's>
+
+  i.e.  address=/.cloudapps.example.com/172.18.7.178
+
+
+  Then restart dnsmasq service
+  
+  systemctl restart dnsmasq
+
+```
+
+4.  Create your script directory on each node
+
+- Since we are manually creating this script for this first version, you need to have it on each node and then
+  in the statefulset we do a hostPath mount to the directory so the container can read and write to the working directory
+  * Alternatively, the script could be incorporated into the image via the Dockerfile build file
+
+```
+  mkdir -p /usr/share/gluster-scripts
+```
+
+- clone this repo or copy the gluster-post.sh script into this directory
+
+- Also copy or have available the glusterfs-statefulset.yaml
 
 
 #### Understanding and Configuring the GlusterFS StatefulSet
