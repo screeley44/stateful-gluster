@@ -86,5 +86,4 @@ This example is initial development and research that utilizes the following:
 # Additional Info
 
 - See [scripts-and-yaml/scrath-pad-results](https://github.com/screeley44/stateful-gluster/tree/master/projects/gluster-statefulset-cloud-aws/scripts-and-yaml/scratch-pad-results) for inital testing and validation of this project
-- TODO: add some step by step examples, configurations, etc...
-
+- See [Kicking the Tires example](https://github.com/screeley44/stateful-gluster/tree/master/projects/gluster-statefulset-cloud-aws/examples/kicking-the-tires) for a Step-by-Step tutorial
