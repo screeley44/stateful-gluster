@@ -80,19 +80,20 @@ After it is up and running add the following into the dnsmasq, where *cloudapps.
 - Also copy or have available the glusterfs-statefulset.yaml
 
 
-#### Understanding and Configuring the GlusterFS StatefulSet
-
+#### Understanding and Configuring the GlusterFS StatefulSet and Service
+TBD
 
 
 #### Executing the GlusterFS StatefulSet
-
+TBD
 
 
 #### Verifying Functionality
-
+See the scratch pad from initial verification, will be similar to that, checking TSP, checking volume info and verifying replication is working
 
 
 #### Running a pod that uses the GlusterFS Trusted Storage Pool Volumes
+TBD - but this won't be much different than how a pod connects to an existing pvc today
 
 ---
 ### Kubernetes Changes Needed

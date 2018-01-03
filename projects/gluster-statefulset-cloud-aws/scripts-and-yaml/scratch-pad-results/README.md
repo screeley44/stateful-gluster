@@ -244,7 +244,20 @@ State: Peer in Cluster (Connected)
 
 
 8.  Bring the cluster down (in AWS set state to `stopped`), wait some time and bring back up
-All Good Here - have done this multiple times
+- All Good Here - have done this multiple times
+
+9.  Running multiple statefulset GFS clusters in a single OCP/Kube cluster (i.e. having multiple separate GFS pods on same nodes with their own TSP)
+- All good here so far, some values need to change and be unique within the StatefulSet, but after that, see no issues so far
+
+```
+gfs1-0                     1/1       Running            0          5m        10.131.2.4     ip-172-18-9-82.ec2.internal
+gfs1-1                     1/1       Running            0          4m        10.130.2.6     ip-172-18-8-73.ec2.internal
+gfs1-2                     1/1       Running            0          3m        10.129.2.6     ip-172-18-4-13.ec2.internal
+glusterfs-0                1/1       Running            0          11m       10.130.2.5     ip-172-18-8-73.ec2.internal
+glusterfs-1                1/1       Running            0          10m       10.129.2.5     ip-172-18-4-13.ec2.internal
+glusterfs-2                1/1       Running            0          10m       10.130.0.4     ip-172-18-13-12.ec2.internal
+
+```
 
 
 
