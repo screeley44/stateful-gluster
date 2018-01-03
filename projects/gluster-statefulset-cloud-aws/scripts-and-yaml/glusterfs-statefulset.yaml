@@ -85,7 +85,7 @@ spec:
           value: "/var/log/glusterfs/gluster-block"
         - name: BASE_NAME
           value: "glusterfs"
-        - name: SERVICE_NAME
+        - name: SERVICE_NAME                  # important that this matches the actual service
           value: "glusterfs"
         - name: NAMESPACE
           value: "default"
