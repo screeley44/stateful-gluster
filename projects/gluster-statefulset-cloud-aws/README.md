@@ -31,7 +31,7 @@ This example is initial development and research that utilizes the following:
 - [x] Scale Up, does the volume expand to the new node and GFS pod
 - [x] Scale Down, does the volume shrink to the new number of replicas
 - [x] TSP and Volume/Brick/Replication All Good?
-- [ ] Multiple Gluster StatefulSets on single cluster
+- [x] Multiple Gluster StatefulSets on single cluster
 
 ## Phase 1.3 Status - Using the Solution
 - [ ] Can I create pods that use the solution?
@@ -57,12 +57,15 @@ This example is initial development and research that utilizes the following:
 
 # Things to Consider or Work Around
 1. Running multiple statefulset GlusterFS clusters - don't think I can do this unless I can find a way to get around the ability to reuse ports
+- (might be resolved) I was having issues early on and had to use hostNetorking to get pods to communicate, that seems to have gone away (maybe a bug in my service that I flushed out).
+- I able to run multiple independent statefulset clusters with no issues
 
 2. Best way to handle the `peer rejected` status?
 - (Resolved) storing glusterfs state in PV/PVC model seems to eliminate this risk
 
 3. Currently using hostNetwork - will this be an issue or is this expected that we use that? The pods couldn't communicate with each
    other when I didn't use hostNetwork. Maybe could remedy this by tweaking something, just not sure what?
+- (Resolved) similar to above, I think I had an issue with my service that I since have corrected.
 
 4. Deploying and using a bash script to manage GlusterFS is not ideal, need to investigate more industry hardened techniques
 - Next steps should we use Golang or some other language to have more powerful control and features?
@@ -78,7 +81,7 @@ This example is initial development and research that utilizes the following:
   this statefulset experimentation. So rather than just creating a single volume per cluster when a user requests storage, we would have a single cluster with
   it's own TSP...kinda interesting to think about it this way??
 
-6. Can we have multiple GFS clusters running as their own StatefulSets in a single OCP/Kube cluster?  I think not at the moment.
+6. Can we have multiple GFS clusters running as their own StatefulSets in a single OCP/Kube cluster?  Yes, it appears we can.
 
 7. When resizing/scaling do we delete bricks and volumes?  How best to do that?
 

@@ -26,7 +26,7 @@ A work in progress repo utilizing K8 Statefulsets with GlusterFS.
 - [x] Scale Up, does the volume expand to the new node and GFS pod
 - [x] Scale Down, does the volume shrink to the new number of replicas
 - [x] TSP and Volume/Brick/Replication All Good?
-- [ ] Multiple Gluster StatefulSets on single cluster
+- [x] Multiple Gluster StatefulSets on single cluster
 
 ## Phase 1.3 Status - Using the Solution
 - [ ] Can I create pods that use the solution?

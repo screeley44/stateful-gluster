@@ -51,7 +51,7 @@ spec:
         glusterfs: pod
         glusterfs-node: pod
     spec:
-      hostNetwork: true
+      hostNetwork: false
       containers:
       - image: gluster/gluster-centos:latest
         imagePullPolicy: IfNotPresent
@@ -99,12 +99,14 @@ spec:
           value: "/mnt/storage/"
         - name: FUSE_BASE
           value: "/mnt/glusterfs-storage/"
-        - name: VOLUME_COUNT
+        - name: VOLUME_COUNT                    # num of volume to manage if CREATE_VOLUMES is turned on
           value: "1"
         - name: CREATE_VOLUMES
-          value: "0"
+          value: "1"                            # boolean controlling whether volumes should be managed
         - name: SET_IDENTIFIER
           value: "app=glusterfs"
+        - name: LOG_NAME
+          value: "/usr/share/bin/glusterfs.log"  #matches gluster-script path
         resources:
           requests:
             memory: 100Mi
