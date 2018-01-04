@@ -81,9 +81,9 @@ This example is initial development and research that utilizes the following:
   this statefulset experimentation. So rather than just creating a single volume per cluster when a user requests storage, we would have a single cluster with
   it's own TSP...kinda interesting to think about it this way??
 
-6. Can we have multiple GFS clusters running as their own StatefulSets in a single OCP/Kube cluster?  Yes, it appears we can.
+6. Can we have multiple GFS clusters running as their own StatefulSets in a single OCP/Kube cluster?  
+- Yes, it appears we can as long as you also have a separate service
 
-7. When resizing/scaling do we delete bricks and volumes?  How best to do that?
 
 
 # Additional Info

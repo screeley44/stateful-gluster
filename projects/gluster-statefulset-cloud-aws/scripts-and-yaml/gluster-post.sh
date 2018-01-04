@@ -216,7 +216,7 @@ then
             # need to check volume mount
             echo "" >> $LOG_NAME
             echo " ... Checking For Volume Mount Status for brick$volstart" >> $LOG_NAME
-            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            if [ "$HOSTNAME" == "$THIS_HOST" ] || [ "$HOSTNAME" == "$HOSTPOD" ]
             then
               echo " ... ... Check to see if fuse mount exists?" >> $LOG_NAME
               # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
@@ -353,7 +353,7 @@ then
             # need to check volume mount
             echo "" >> $LOG_NAME
             echo " ... Checking For Volume Mount Status for brick$volstart" >> $LOG_NAME
-            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            if [ "$HOSTNAME" == "$THIS_HOST" ] || [ "$HOSTNAME" == "$HOSTPOD" ]
             then
               echo " ... ... Check to see if fuse mount exists?" >> $LOG_NAME
               # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
@@ -445,7 +445,7 @@ then
             # need to check volume mount
             echo "" >> $LOG_NAME
             echo " ... Checking For Volume Mount Status for brick$volstart" >> $LOG_NAME
-            if [ "$HOSTNAME" == "$THIS_HOST" ]
+            if [ "$HOSTNAME" == "$THIS_HOST" ] || [ "$HOSTNAME" == "$HOSTPOD" ]
             then
               echo " ... ... Check to see if fuse mount exists?" >> $LOG_NAME
               # if grep -qs '$FUSE_BASE$VOLUME_BASE$volstart' /proc/mounts
@@ -611,7 +611,7 @@ function checkVolumeMounts () {
 
    # need to check volume mount
    echo " ... Checking For Volume Mount Status for brick$volstart" >> $LOG_NAME
-   if [ "$HOSTNAME" == "$THIS_HOST" ]
+   if [ "$HOSTNAME" == "$THIS_HOST" ] || [ "$HOSTNAME" == "$HOSTPOD" ]
    then
      echo " ... ... Check to see if fuse mount exists?" >> $LOG_NAME
      # if grep -qs '$FUSE_BASE$VOLUME_BASE$volnum' /proc/mounts
