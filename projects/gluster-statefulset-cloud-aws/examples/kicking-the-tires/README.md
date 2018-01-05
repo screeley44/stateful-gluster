@@ -103,9 +103,11 @@ spec:
     app: glusterfs <3>
 
 ```
-<1> Name of the service, this will be used in the statefulset definition as well
-<2> A lable identifying our application identifier
-<3> This is our application identifier for our StatefulSet, and let's the service know which pods it will manage
+<1> Name of the service, this will be used in the statefulset definition as well.
+
+<2> A lable identifying our application identifier.
+
+<3> This is our application identifier for our StatefulSet, and let's the service know which pods it will manage.
 
 #### Executing the GlusterFS StatefulSet
 TBD
