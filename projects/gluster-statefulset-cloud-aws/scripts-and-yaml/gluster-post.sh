@@ -5,7 +5,7 @@ IFS=$'\n\t'
 if systemctl status glusterd | grep -q '(running) since'
 then
 
-  # Run some api commands to figure out who we are and our state
+  # Run some api commands to figure out who we are and our current state
   CURL_COMMAND="curl -v"
   K8_CERTS="--cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   GET_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
@@ -17,11 +17,6 @@ then
   REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
 
   # Get Node running on
-  # PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods"
-  # PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
-  # MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]'`
-
-  # Get Node running on
   PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
   PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
   MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
@@ -31,7 +26,7 @@ then
   HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
   MY_HOSTS=`eval $HOSTS_API_COMMAND | grep 'nodeName'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
 
-  # Find the pod running on this particular host
+  # Find the pod, node and hostname and reconcile
   HOSTCOUNT=0
   HOSTPOD=""
   THIS_HOST=""
@@ -96,7 +91,8 @@ then
     HOSTPOD=$HOSTNAME
   fi
 
-  #Figure State of Cluster
+  # Some Common Variables used
+  # Figure State of Cluster
   # Keeps track of initial peer count only run on original starting cluster
   numpeers="$(gluster peer status | grep -oP 'Peers:\s\K\w+')"
   EXPECTED_REPLICA_COUNT=$(( $numpeers + 1 ))  #should match REPLICA_COUNT after script runs
@@ -110,12 +106,17 @@ then
   INITIAL_RUN="yes"
   DNSHOSTPOD="$HOSTPOD.$SERVICE_NAME.$NAMESPACE.svc.cluster.local"
 
+  # Initialize our log
   if [ -e $LOG_NAME ]
   then
-      echo " -----  Next Run   -----" >> $LOG_NAME
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------  Next Run   -----------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
       INITIAL_RUN="no"
   else
-      echo " -----  Initial Run   -----" > $LOG_NAME  
+      echo " ----------------------------------------------------------------------------------------" > $LOG_NAME
+      echo " ----------------------------  Initial Run   --------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
   fi
   echo "" >> $LOG_NAME
   echo "" >> $LOG_NAME
@@ -134,13 +135,10 @@ then
   echo "DNSHOSTPOD = $DNSHOSTPOD" >> $LOG_NAME
   echo "VOLUME_COUNT = $VOLUME_COUNT" >> $LOG_NAME 
 
-  # TODO: Add "peer rejected" status and mitigation
-  # TODO: think it comes from above todo state: 
-  #              peer probe: failed: glusterfs-0.glusterfs.default.svc.cluster.local is either already part of another cluster or having volumes configured
-  # TODO: test volume management  
 
   if [ "$INITIAL_RUN" == "yes" ]
   then
+      echo "" >> $LOG_NAME
       echo "Initial Run on host" >> $LOG_NAME
 
       peerstart=-1
@@ -156,6 +154,7 @@ then
         fi           
       done
       echo "...Initial Run peer probe should be good" >> $LOG_NAME      
+      echo "" >> $LOG_NAME 
 
       echo "...Volume Setup" >> $LOG_NAME
 
@@ -574,7 +573,6 @@ then
   exit 0
 else 
   echo "" >> $LOG_NAME
-  echo "Liveness Probe Failed" >> $LOG_NAME
   echo "Liveness Probe Failed" >> $LOG_NAME
   exit 1
 fi

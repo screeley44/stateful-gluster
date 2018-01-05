@@ -77,17 +77,17 @@ spec:
         - containerPort: 24007
         - containerPort: 24008
         env:
-        - name: GB_GLFS_LRU_COUNT
-          value: "15"
-        - name: TCMU_LOGDIR
-          value: "/var/log/glusterfs/gluster-block"
-        - name: GB_LOGDIR
-          value: "/var/log/glusterfs/gluster-block"
+#        - name: GB_GLFS_LRU_COUNT
+#          value: "15"
+#        - name: TCMU_LOGDIR
+#          value: "/var/log/glusterfs/gluster-block"
+#        - name: GB_LOGDIR
+#          value: "/var/log/glusterfs/gluster-block"
         - name: BASE_NAME
           value: "glusterfs"
-        - name: SERVICE_NAME                  # important that this matches the actual service
+        - name: SERVICE_NAME                  # important that this matches the actual service that corresponds to this set
           value: "glusterfs"
-        - name: NAMESPACE
+        - name: NAMESPACE                     # maybe this can be inferred in someway
           value: "default"
         - name: ORIGINAL_PEER_COUNT
           value: "3"
@@ -96,7 +96,7 @@ spec:
         - name: VOLUME_BASE
           value: "glusterfs-data"
         - name: MOUNT_BASE
-          value: "/mnt/storage/"
+          value: "/mnt/glusterfs-volume/"
         - name: FUSE_BASE
           value: "/mnt/glusterfs-storage/"
         - name: VOLUME_COUNT                    # num of volume to manage if CREATE_VOLUMES is turned on

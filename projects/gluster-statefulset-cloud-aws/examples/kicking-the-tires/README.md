@@ -81,8 +81,31 @@ After it is up and running add the following into the dnsmasq, where *cloudapps.
 
 
 #### Understanding and Configuring the GlusterFS StatefulSet and Service
-TBD
 
+Each GlusterFS statefulset will need it's own dedicated service, this allows communication between the containers and nodes.
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: glusterfs <1>
+  labels:
+    app: glusterfs <2>
+    glusterfs: service
+spec:
+  ports:
+  - port: 24007
+    name: glusterd
+  - port: 24008
+    name: management
+  clusterIP: None
+  selector:
+    app: glusterfs <3>
+
+```
+<1> Name of the service, this will be used in the statefulset definition as well
+<2> A lable identifying our application identifier
+<3> This is our application identifier for our StatefulSet, and let's the service know which pods it will manage
 
 #### Executing the GlusterFS StatefulSet
 TBD
