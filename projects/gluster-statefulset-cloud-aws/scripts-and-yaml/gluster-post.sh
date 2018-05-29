@@ -5,26 +5,49 @@ IFS=$'\n\t'
 if systemctl status glusterd | grep -q '(running) since'
 then
 
+  # Initialize our log
+  if [ -e $LOG_NAME ]
+  then
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------  Next Run   -----------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
+      echo "Last Run: [ $(date) ]" >> $LOG_NAME
+      INITIAL_RUN="no"
+  else
+      echo " ----------------------------------------------------------------------------------------" > $LOG_NAME
+      echo " ----------------------------  Initial Run   --------------------------------------------" >> $LOG_NAME
+      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
+      echo "Last Run: [ $(date) ]" >> $LOG_NAME
+  fi
+
   # Run some api commands to figure out who we are and our current state
-  CURL_COMMAND="curl -v"
+  # CURL_COMMAND="curl -v"
+  CURL_COMMAND="curl -k"
   K8_CERTS="--cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   GET_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
   K8_TOKEN="-H \"Authorization: Bearer $GET_TOKEN\""
 
   # StatefulSet Calls
   STATEFULSET_API_CALL="https://kubernetes.default.svc.cluster.local/apis/apps/v1beta1/namespaces/$NAMESPACE/statefulsets/$BASE_NAME"
-  STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $STATEFULSET_API_CALL"
+  # Version 3.6 and 3.7 - no good for 3.9
+  # STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $STATEFULSET_API_CALL"  
+  STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_TOKEN $STATEFULSET_API_CALL"
   REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
+  echo "command $STATEFULSET_API_COMMAND" >> $LOG_NAME
 
   # Get Node running on
   PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
-  PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
+  # PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
+  PODS_API_COMMAND="$CURL_COMMAND $K8_TOKEN $PODS_API_CALL"
   MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+  echo "command $MY_PODS" >> $LOG_NAME
 
   # Get Host the pods are  running
   HOSTS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
-  HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
+  # HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
+  HOSTS_API_COMMAND="$CURL_COMMAND $K8_TOKEN $HOSTS_API_CALL"
   MY_HOSTS=`eval $HOSTS_API_COMMAND | grep 'nodeName'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+  echo "command $MY_HOSTS" >> $LOG_NAME
 
   # Find the pod, node and hostname and reconcile
   HOSTCOUNT=0
@@ -106,18 +129,7 @@ then
   INITIAL_RUN="yes"
   DNSHOSTPOD="$HOSTPOD.$SERVICE_NAME.$NAMESPACE.svc.cluster.local"
 
-  # Initialize our log
-  if [ -e $LOG_NAME ]
-  then
-      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
-      echo " ----------------------------  Next Run   -----------------------------------------------" >> $LOG_NAME
-      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
-      INITIAL_RUN="no"
-  else
-      echo " ----------------------------------------------------------------------------------------" > $LOG_NAME
-      echo " ----------------------------  Initial Run   --------------------------------------------" >> $LOG_NAME
-      echo " ----------------------------------------------------------------------------------------" >> $LOG_NAME
-  fi
+
   echo "" >> $LOG_NAME
   echo "" >> $LOG_NAME
   echo "****** LOG   ******" >> $LOG_NAME
@@ -139,7 +151,7 @@ then
   if [ "$INITIAL_RUN" == "yes" ]
   then
       echo "" >> $LOG_NAME
-      echo "Initial Run on host" >> $LOG_NAME
+      echo "!!! Cluster Initial Run on Host !!!" >> $LOG_NAME
 
       peerstart=-1
       until test $peerstart -eq $PEER_COUNT
@@ -199,6 +211,7 @@ then
             done
 
             # Create our initial volumes and bricks, if they don't already exist
+            # based on the VOLUME_LIST analysis from above
             echo "volumelist = $VOLUME_LIST" >> $LOG_NAME
             if [ "$VOLUME_LIST" == "" ]
             then
@@ -246,7 +259,8 @@ then
 
   elif (gluster peer status | grep -q "Peer Rejected")
   then
-      echo "We have a rejected peer - need to handle" >> $LOG_NAME
+      # TODO: This can probably be removed, I have not seen this status YET 
+      echo "!!! We have a rejected peer - need to handle !!!" >> $LOG_NAME
       rejectedhost="$(gluster peer status | grep -B 2 'Peer Rejected' | grep 'Hostname:'|cut -f2 -d ':' | tr -d '[:space:]')"
       echo "... rejected host = $rejectedhost" >> $LOG_NAME
       if [ "$DNSHOSTPOD" == "$rejectedhost" ]
@@ -280,7 +294,9 @@ then
 
   elif [ "${ORIGINAL_PEER_COUNT}" -eq "0" ] && [ "$INITIAL_RUN" == "no" ]
   then
-      echo "We have a recycled pod - need to handle" >> $LOG_NAME
+      # It's not our initial run but cluster/TSP was reset in someway, either Cluster was deleted by user, or PVCs were deleted or possibly we have a recycled pod, need to check state of the world
+      # TODO: This could be combined with INITIAL run really, so can clean that up at sometime but for now trying to see what conditions I run into
+      echo " !!! Cluster was Reset or Deleted and is Reinitializing, Need to Reevaluate State of World !!!" >> $LOG_NAME
       peerstart=-1
       until test $peerstart -eq $PEER_COUNT
       do
@@ -384,7 +400,7 @@ then
 
   elif [ "${ORIGINAL_PEER_COUNT}" -eq "${PEER_COUNT}" ] && [ "$INITIAL_RUN" == "no" ]
   then
-      echo "No need to add peers, nothing has changed" >> $LOG_NAME
+      echo "!!! Cluster seems to have not changed since last run !!!" >> $LOG_NAME
       echo " ...let's check for volumes???" >> $LOG_NAME
 
       if [ "$CREATE_VOLUMES" -eq "1" ]
@@ -476,7 +492,7 @@ then
 
   elif [ "${EXPECTED_REPLICA_COUNT}" -lt "$REPLICA_COUNT" ] && [ "$INITIAL_RUN" == "no" ]
   then
-      echo "Cluster needs to scale up!" >> $LOG_NAME
+      echo "!!! Cluster needs to scale up !!!" >> $LOG_NAME
       
       numup=$(( $REPLICA_COUNT - $CURRENT_NODE_COUNT ))          
       peerstart=$(( $CURRENT_NODE_COUNT - 1 ))
@@ -518,7 +534,7 @@ then
 
   elif [ "${EXPECTED_REPLICA_COUNT}" -gt "$REPLICA_COUNT" ] && [ "$INITIAL_RUN" == "no" ]
   then
-      echo "Cluster needs to scale down!" >> $LOG_NAME
+      echo "!!! Cluster needs to scale down !!!" >> $LOG_NAME
       numdown=$(( $CURRENT_NODE_COUNT - $REPLICA_COUNT ))          
       peerstart1=$(( $CURRENT_NODE_COUNT - $numdown ))
       peerstart=$(( $peerstart1 - 1 ))

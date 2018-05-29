@@ -261,19 +261,19 @@ spec:
           storage: 80Gi
 
 ```
-<1> Name of the Statefulset and BASE_NAME, these should always match and this should be unique and consistent for other naming within the Statefulset
+<1> Name of the Statefulset and BASE_NAME, these should always match and this should be unique and consistent for other naming within the Statefulset.
 
-<2> Application Identifier, a unique grouping of components, in this case our GlusterFS pods
+<2> Application Identifier, a unique grouping of components, in this case our GlusterFS pods.
 
-<3> Service Name and SERVICE_NAME, these should match and they define the servie that will manage this Statefulset and it's components, it needs to match the actual service that was created in the previous step
+<3> Service Name and SERVICE_NAME, these should match and they define the service that will manage this Statefulset and it's components, it needs to match the actual service that was created in the previous step.
 
-<4> Replicas and ORIGINAL_PEER_COUNT should always match and should be the number of GlusterFS pods you want to run, you must have at least that many nodes to be scheduled
+<4> Replicas and ORIGINAL_PEER_COUNT should always match and should be the number of GlusterFS pods you want to run, you must have at least that many nodes to be scheduled.
 
-<5> The LifeCycle postStart hook and livenessProbes are the Kube primitives that will initialize and invoke the Management Script/Code/etc... used to manage the GlusterFS cluster
+<5> The LifeCycle postStart hook and livenessProbes are the Kube primitives that will initialize and invoke the Management Script/Code/etc... used to manage the GlusterFS cluster.
 
 <6> Kube Namespace where Set is deployed.
 
-<7> The Kube domain, default is svc.cluster.local
+<7> The Kube domain, default is svc.cluster.local.
 
 <8> MOUNT_BASE + VOLUME_BASE should match volumeMounts mountPath minus the numeric identifier i.e. glusterfs-data0, 1, 2, 3 etc...
 
