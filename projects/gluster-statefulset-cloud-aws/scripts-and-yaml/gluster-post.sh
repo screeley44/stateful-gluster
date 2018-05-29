@@ -21,7 +21,7 @@ then
   fi
 
   # Run some api commands to figure out who we are and our current state
-  CURL_COMMAND="curl -v"
+  CURL_COMMAND="curl -kv"
   # CURL_COMMAND="curl -kv"
   K8_CERTS="--cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   GET_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
