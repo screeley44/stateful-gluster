@@ -21,8 +21,8 @@ then
   fi
 
   # Run some api commands to figure out who we are and our current state
-  # CURL_COMMAND="curl -v"
-  CURL_COMMAND="curl -k"
+  CURL_COMMAND="curl -v"
+  # CURL_COMMAND="curl -kv"
   K8_CERTS="--cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   GET_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
   K8_TOKEN="-H \"Authorization: Bearer $GET_TOKEN\""
@@ -32,22 +32,28 @@ then
   # Version 3.6 and 3.7 - no good for 3.9
   # STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $STATEFULSET_API_CALL"  
   STATEFULSET_API_COMMAND="$CURL_COMMAND $K8_TOKEN $STATEFULSET_API_CALL"
-  REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
-  echo "command $STATEFULSET_API_COMMAND" >> $LOG_NAME
+  echo "statefulset command $STATEFULSET_API_COMMAND" >> $LOG_NAME
+  # REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |cut -f2 -d "," | tr -d '[:space:]'`
+  REPLICA_COUNT=`eval $STATEFULSET_API_COMMAND | grep 'replicas'|cut -f2 -d ":" |head -1 | tr -d '[:space:]'|head -c -1`
+  echo "RC = $REPLICA_COUNT" >> $LOG_NAME
 
   # Get Node running on
   PODS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
   # PODS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $PODS_API_CALL"
   PODS_API_COMMAND="$CURL_COMMAND $K8_TOKEN $PODS_API_CALL"
-  MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
-  echo "command $MY_PODS" >> $LOG_NAME
+  echo "pods command $PODS_API_COMMAND" >> $LOG_NAME
+  # MY_PODS=`eval $PODS_API_COMMAND | grep 'pod.beta.kubernetes.io/hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+  # MY_PODS=`eval $PODS_API_COMMAND | grep 'statefulset.kubernetes.io/pod-name'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+  MY_PODS=`eval $PODS_API_COMMAND | grep 'hostname'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
+
 
   # Get Host the pods are  running
   HOSTS_API_CALL="https://kubernetes.default.svc.cluster.local/api/v1/namespaces/$NAMESPACE/pods?labelSelector=$SET_IDENTIFIER"
   # HOSTS_API_COMMAND="$CURL_COMMAND $K8_CERTS $K8_TOKEN $HOSTS_API_CALL"
   HOSTS_API_COMMAND="$CURL_COMMAND $K8_TOKEN $HOSTS_API_CALL"
+  echo "hosts command $HOSTS_API_COMMAND" >> $LOG_NAME
   MY_HOSTS=`eval $HOSTS_API_COMMAND | grep 'nodeName'|cut -f2 -d ":" | tr -d '[:space:]' | tr -d '"'`
-  echo "command $MY_HOSTS" >> $LOG_NAME
+
 
   # Find the pod, node and hostname and reconcile
   HOSTCOUNT=0
